@@ -48,12 +48,12 @@ public class Transaction {
     private ArrayList<Input> inputs;
     private ArrayList<Output> outputs;
 
-    public Transaction() {  // 创建新交易
+    public Transaction() { // 创建新交易
         inputs = new ArrayList<Input>();
         outputs = new ArrayList<Output>();
     }
 
-    public Transaction(Transaction tx) {  // 复制交易
+    public Transaction(Transaction tx) { // 复制交易
         hash = tx.hash.clone();
         inputs = new ArrayList<Input>(tx.inputs);
         outputs = new ArrayList<Output>(tx.outputs);
@@ -85,36 +85,36 @@ public class Transaction {
     }
 
     public byte[] getRawDataToSign(int index) {
-        // ith input and all outputs
-        ArrayList<Byte> sigData = new ArrayList<Byte>();
         if (index > inputs.size())
             return null;
-        Input in = inputs.get(index);
-        byte[] prevTxHash = in.prevTxHash;
-        ByteBuffer b = ByteBuffer.allocate(Integer.SIZE / 8);
-        b.putInt(in.outputIndex);
-        byte[] outputIndex = b.array();
-        if (prevTxHash != null)
-            for (int i = 0; i < prevTxHash.length; i++)
-                sigData.add(prevTxHash[i]);
-        for (int i = 0; i < outputIndex.length; i++)
-            sigData.add(outputIndex[i]);
-        for (Output op : outputs) {
-            ByteBuffer bo = ByteBuffer.allocate(Double.SIZE / 8);
-            bo.putDouble(op.value);
-            byte[] value = bo.array();
-            byte[] addressBytes = op.address.getEncoded();
-            for (int i = 0; i < value.length; i++)
-                sigData.add(value[i]);
 
-            for (int i = 0; i < addressBytes.length; i++)
-                sigData.add(addressBytes[i]);
+        Input in = inputs.get(index);
+
+        // 计算所需的总字节数
+        int totalSize = (in.prevTxHash != null ? in.prevTxHash.length : 0) + Integer.BYTES;
+        for (Output op : outputs) {
+            totalSize += 8; // double value 占用 8 字节
+            totalSize += op.address.getEncoded().length;
         }
-        byte[] sigD = new byte[sigData.size()];
-        int i = 0;
-        for (Byte sb : sigData)
-            sigD[i++] = sb;
-        return sigD;
+
+        // 使用 ByteBuffer 一次性分配空间
+        ByteBuffer buffer = ByteBuffer.allocate(totalSize);
+
+        // 添加 prevTxHash
+        if (in.prevTxHash != null) {
+            buffer.put(in.prevTxHash);
+        }
+
+        // 添加 outputIndex
+        buffer.putInt(in.outputIndex);
+
+        // 添加所有输出
+        for (Output op : outputs) {
+            buffer.putDouble(op.value);
+            buffer.put(op.address.getEncoded());
+        }
+
+        return buffer.array();
     }
 
     public void addSignature(byte[] signature, int index) {
