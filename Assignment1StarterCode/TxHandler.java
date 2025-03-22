@@ -3,7 +3,7 @@ import java.util.List;
 import java.util.HashSet;
 
 public class TxHandler {
-    private UTXOPool utxoPool;
+    protected UTXOPool utxoPool;
 
     /**
      * Creates a public ledger whose current UTXOPool (collection of unspent transaction outputs) is
